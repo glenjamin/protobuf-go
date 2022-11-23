@@ -682,3 +682,17 @@ func lessF64(x, y float64) bool {
 	yi ^= int64(uint64(yi>>63) >> 1)
 	return xi < yi
 }
+
+// TransformMessage applies custom transforms to protobuf types.
+// f must be of type func(M) T, where M is a proto.Message and T is whatever you need.
+// This is most useful when you want to apply a pre-existing cmp.Option
+// that is designed to work on normal types, such as cmpopts.EquateApproxTime
+func TransformMessage(f interface{}) cmp.Option {
+	fVal := reflect.ValueOf(f)
+	msgType := fVal.Type().In(0)
+	m := reflect.Zero(msgType).Interface().(proto.Message)
+	name := fmt.Sprintf("protocmp.TransformMessage.%s", msgType.Elem())
+	return FilterMessage(m, cmp.Transformer(name, func(m Message) interface{} {
+		return fVal.Call([]reflect.Value{reflect.ValueOf(m.Unwrap())})[0].Interface()
+	}))
+}

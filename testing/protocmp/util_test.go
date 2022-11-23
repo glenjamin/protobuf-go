@@ -9,13 +9,16 @@ import (
 	"math/rand"
 	"sort"
 	"testing"
+	"time"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/testing/protopack"
 	"google.golang.org/protobuf/types/dynamicpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	testpb "google.golang.org/protobuf/internal/testprotos/test"
 )
@@ -1279,6 +1282,18 @@ func TestEqual(t *testing.T) {
 				"repeated_foreign_enum",
 				"repeated_foreign_message",
 			),
+		},
+		want: true,
+	}}...)
+
+	// Test TransformMessage
+	tests = append(tests, []test{{
+		x: timestamppb.New(time.Date(2021, 10, 1, 16, 35, 0, 0, time.UTC)),
+		y: timestamppb.New(time.Date(2021, 10, 1, 16, 35, 0, 50, time.UTC)),
+		opts: cmp.Options{
+			Transform(),
+			TransformMessage((*timestamppb.Timestamp).AsTime),
+			cmpopts.EquateApproxTime(time.Second),
 		},
 		want: true,
 	}}...)
